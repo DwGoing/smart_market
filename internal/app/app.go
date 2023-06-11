@@ -1,6 +1,8 @@
 package app
 
 import (
+	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 
@@ -25,23 +27,50 @@ var upgrader = websocket.Upgrader{
 
 func (app *App) Run() {
 	engine := gin.Default()
-	engine.GET("/ws", app.ws)
+	engine.GET("/ws", app.createWebsocketConnection)
 	_ = engine.Run("0.0.0.0:9000")
 }
 
-func (app *App) ws(ctx *gin.Context) {
+func (app *App) createWebsocketConnection(ctx *gin.Context) {
 	conn, err := upgrader.Upgrade(ctx.Writer, ctx.Request, ctx.Request.Trailer)
 	if err != nil {
 		ctx.Writer.Write([]byte(err.Error()))
 	}
-	err = app.WebsocketService.CreateConnection(conn, func(id uuid.UUID, msgType int, msgBytes []byte) error {
-		log.Printf("reveive msg: %s %s", msgBytes, id)
-		app.WebsocketService.Send(id, msgType, msgBytes)
-		return nil
-	}, func(id uuid.UUID, err error) {
-		log.Printf("%s exited %s", id, err)
-	})
+	err = app.WebsocketService.CreateConnection(
+		conn,
+		nil,
+		func(id uuid.UUID, msgType int, msgBytes []byte) error {
+			if err = app.handleWebsocketMessage(id, msgType, msgBytes); err != nil {
+				log.Printf("handle websocket message error: %s | %s | %s", id, err, msgBytes)
+			}
+			return nil
+		},
+		nil,
+	)
 	if err != nil {
 		conn.WriteMessage(1, []byte(err.Error()))
 	}
+}
+
+func (app *App) handleWebsocketMessage(id uuid.UUID, msgType int, msgBytes []byte) error {
+	log.Printf("receive websocket message: %s | %s", id, msgBytes)
+	var request Request
+	err := json.Unmarshal(msgBytes, &request)
+	if err != nil {
+		return err
+	}
+	switch request.Method {
+	case "ping":
+		responseBytes, err := json.Marshal(Response{Id: request.Id, Code: 200, Message: "pong"})
+		if err != nil {
+			return err
+		}
+		err = app.WebsocketService.Send(id, 1, responseBytes)
+		if err != nil {
+			return err
+		}
+	default:
+		return errors.New("unknown request")
+	}
+	return nil
 }

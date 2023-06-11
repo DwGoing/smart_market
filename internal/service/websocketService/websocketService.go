@@ -20,13 +20,19 @@ func New(service *WebsocketService) (*WebsocketService, error) {
 	return service, nil
 }
 
-func (service *WebsocketService) CreateConnection(conn *websocket.Conn, receiveHandler func(uuid.UUID, int, []byte) error, closeHandler func(uuid.UUID, error)) error {
+func (service *WebsocketService) CreateConnection(
+	conn *websocket.Conn,
+	openHandler func(uuid.UUID) error,
+	receiveHandler func(uuid.UUID, int, []byte) error,
+	closeHandler func(uuid.UUID, error),
+) error {
 	if conn == nil || receiveHandler == nil {
 		return errors.New("parameter is nil")
 	}
 	client := &Client{uuid.New(), conn}
 	go func(client *Client) {
 		defer conn.Close()
+		defer delete(service.clients, client.id)
 		for {
 			err := client.Receive(receiveHandler)
 			if err != nil {

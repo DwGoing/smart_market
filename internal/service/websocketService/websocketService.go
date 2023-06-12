@@ -2,6 +2,7 @@ package websocketService
 
 import (
 	"errors"
+	"log"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -9,13 +10,14 @@ import (
 
 // +ioc:autowire=true
 // +ioc:autowire:type=singleton
-// +ioc:autowire:constructFunc=New
+// +ioc:autowire:constructFunc=NewWebsocketService
 
 type WebsocketService struct {
 	clients map[uuid.UUID]*Client
 }
 
-func New(service *WebsocketService) (*WebsocketService, error) {
+func NewWebsocketService(service *WebsocketService) (*WebsocketService, error) {
+	log.SetPrefix("[WebsocketService] ")
 	service.clients = make(map[uuid.UUID]*Client)
 	return service, nil
 }

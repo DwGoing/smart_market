@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/DwGoing/smart_market/internal/service/marketServcie"
 	"github.com/DwGoing/smart_market/internal/service/websocketService"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -17,6 +18,7 @@ import (
 
 type App struct {
 	WebsocketService *websocketService.WebsocketService `singleton:""`
+	MarketService    *marketServcie.MarketService       `singleton:""`
 }
 
 var upgrader = websocket.Upgrader{

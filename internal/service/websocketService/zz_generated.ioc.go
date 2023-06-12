@@ -26,7 +26,7 @@ func init() {
 		},
 		ConstructFunc: func(i interface{}, _ interface{}) (interface{}, error) {
 			impl := i.(*WebsocketService)
-			var constructFunc WebsocketServiceConstructFunc = New
+			var constructFunc WebsocketServiceConstructFunc = NewWebsocketService
 			return constructFunc(impl)
 		},
 		Metadata: map[string]interface{}{
@@ -39,12 +39,12 @@ func init() {
 
 type WebsocketServiceConstructFunc func(impl *WebsocketService) (*WebsocketService, error)
 type websocketService_ struct {
-	CreateConnection_ func(conn *websocket.Conn, receiveHandler func(uuid.UUID, int, []byte) error, closeHandler func(uuid.UUID, error)) error
+	CreateConnection_ func(conn *websocket.Conn, openHandler func(uuid.UUID) error, receiveHandler func(uuid.UUID, int, []byte) error, closeHandler func(uuid.UUID, error)) error
 	Send_             func(id uuid.UUID, msgType int, msgBytes []byte) error
 }
 
-func (w *websocketService_) CreateConnection(conn *websocket.Conn, receiveHandler func(uuid.UUID, int, []byte) error, closeHandler func(uuid.UUID, error)) error {
-	return w.CreateConnection_(conn, receiveHandler, closeHandler)
+func (w *websocketService_) CreateConnection(conn *websocket.Conn, openHandler func(uuid.UUID) error, receiveHandler func(uuid.UUID, int, []byte) error, closeHandler func(uuid.UUID, error)) error {
+	return w.CreateConnection_(conn, openHandler, receiveHandler, closeHandler)
 }
 
 func (w *websocketService_) Send(id uuid.UUID, msgType int, msgBytes []byte) error {
@@ -52,7 +52,7 @@ func (w *websocketService_) Send(id uuid.UUID, msgType int, msgBytes []byte) err
 }
 
 type WebsocketServiceIOCInterface interface {
-	CreateConnection(conn *websocket.Conn, receiveHandler func(uuid.UUID, int, []byte) error, closeHandler func(uuid.UUID, error)) error
+	CreateConnection(conn *websocket.Conn, openHandler func(uuid.UUID) error, receiveHandler func(uuid.UUID, int, []byte) error, closeHandler func(uuid.UUID, error)) error
 	Send(id uuid.UUID, msgType int, msgBytes []byte) error
 }
 
